@@ -1,8 +1,7 @@
-
 import { ArrowRight, Github, Linkedin, Mail } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
-import ThreeScene from "./ThreeScene";
+import ThreeScene from "./three/ThreeScene";
 
 const Hero = () => {
   const [loaded, setLoaded] = useState(false);
