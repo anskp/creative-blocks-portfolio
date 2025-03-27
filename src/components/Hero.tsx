@@ -1,14 +1,47 @@
-import { ArrowRight, Github, Linkedin, Mail } from "lucide-react";
-import { useEffect, useState } from "react";
+
+import { ArrowRight, Github, Linkedin, Mail, Upload } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
 import { cn } from "@/lib/utils";
 import ThreeScene from "./three/ThreeScene";
+import { toast } from "@/components/ui/use-toast";
 
 const Hero = () => {
   const [loaded, setLoaded] = useState(false);
+  const [modelPath, setModelPath] = useState<string | undefined>();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setLoaded(true);
   }, []);
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Check if file is a GLTF or GLB file
+    if (!file.name.endsWith('.gltf') && !file.name.endsWith('.glb')) {
+      toast({
+        title: "Invalid file format",
+        description: "Please upload a GLTF or GLB file",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Create a URL for the file
+    const url = URL.createObjectURL(file);
+    setModelPath(url);
+    
+    toast({
+      title: "Model loaded",
+      description: `Loaded model: ${file.name}`,
+      variant: "default"
+    });
+  };
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
 
   return (
     <section
@@ -41,6 +74,20 @@ const Hero = () => {
             <a href="#contact" className="btn-outline">
               Contact Me
             </a>
+            <button 
+              onClick={handleUploadClick}
+              className="flex items-center gap-2 px-4 py-2 rounded-md border border-lavender text-lavender hover:bg-lavender/10 transition-colors"
+            >
+              <Upload size={18} />
+              Upload 3D Model
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".gltf,.glb"
+              onChange={handleFileUpload}
+              className="hidden"
+            />
           </div>
 
           <div className="flex items-center gap-4 pt-2">
@@ -85,7 +132,7 @@ const Hero = () => {
             </div>
             <div className="flex h-full w-full p-4">
               <div className="w-full h-full">
-                <ThreeScene />
+                <ThreeScene modelPath={modelPath} />
               </div>
             </div>
           </div>

@@ -4,8 +4,13 @@ import { setupLights } from "./utils/setupLights";
 import { createWorkspace } from "./objects/createWorkspace";
 import { createScreenContent } from "./utils/createScreenContent";
 import { ProfileDetail } from "./ProfileDetail";
+import { loadGLTFModel } from "./utils/modelLoader";
 
-const ThreeScene: React.FC = () => {
+interface ThreeSceneProps {
+  modelPath?: string; // Optional path to a GLTF model
+}
+
+const ThreeScene: React.FC<ThreeSceneProps> = ({ modelPath }) => {
   const mountRef = useRef<HTMLDivElement>(null);
   const [screenActive, setScreenActive] = useState(false);
   
@@ -27,6 +32,7 @@ const ThreeScene: React.FC = () => {
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(mountRef.current.clientWidth, mountRef.current.clientHeight);
     renderer.setClearColor(0x000000, 0); // Transparent background
+    renderer.shadowMap.enabled = true;
     mountRef.current.appendChild(renderer.domElement);
     
     // Raycaster for object interaction
@@ -61,6 +67,20 @@ const ThreeScene: React.FC = () => {
     
     // Add workspace to scene
     scene.add(workspaceGroup);
+    
+    // Load GLTF model if provided
+    if (modelPath) {
+      // Position for the model - adjust as needed
+      const modelPosition = new THREE.Vector3(0, 0, 0);
+      // Load the model with default scale of 1
+      loadGLTFModel(scene, modelPath, modelPosition, 1)
+        .then((model) => {
+          console.log("GLTF model loaded successfully");
+        })
+        .catch((error) => {
+          console.error("Failed to load GLTF model:", error);
+        });
+    }
     
     // Camera position for normal and zoomed views
     const normalCameraPosition = new THREE.Vector3(0, 1, 5);
@@ -185,7 +205,7 @@ const ThreeScene: React.FC = () => {
       particlesGeometry.dispose();
       particlesMaterial.dispose();
     };
-  }, []);
+  }, [modelPath]);
   
   return (
     <div>
