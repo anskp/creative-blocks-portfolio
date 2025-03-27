@@ -79,8 +79,11 @@ const Hero = () => {
             loaded ? "opacity-100 translate-x-0" : "opacity-0 translate-x-10"
           )}
         >
-          <div className="scene-container glass">
+          <div className="scene-container glass relative">
             <div className="absolute inset-0 bg-gradient-purple opacity-10 rounded-xl"></div>
+            <div className="overlay-text absolute top-4 left-4 right-4 text-center text-sm text-muted-foreground pointer-events-none">
+              Click on the computer screen to view details
+            </div>
             <div className="flex h-full w-full p-4">
               <div className="w-full h-full">
                 <ThreeScene />

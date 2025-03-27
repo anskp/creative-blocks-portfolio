@@ -1,9 +1,9 @@
-
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import * as THREE from "three";
 
 const ThreeScene: React.FC = () => {
   const mountRef = useRef<HTMLDivElement>(null);
+  const [screenActive, setScreenActive] = useState(false);
   
   useEffect(() => {
     if (!mountRef.current) return;
@@ -25,6 +25,10 @@ const ThreeScene: React.FC = () => {
     renderer.setClearColor(0x000000, 0); // Transparent background
     mountRef.current.appendChild(renderer.domElement);
     
+    // Raycaster for object interaction
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    
     // Lights
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
     scene.add(ambientLight);
@@ -36,16 +40,33 @@ const ThreeScene: React.FC = () => {
     // Create a workspace setup
     const workspaceGroup = new THREE.Group();
     
-    // Create a desk (table)
+    // Create a desk (table) with better materials
     const deskGeometry = new THREE.BoxGeometry(5, 0.2, 2.5);
     const deskMaterial = new THREE.MeshPhysicalMaterial({
-      color: 0x5c4033, // Wood brown color
+      color: 0x3a2618, // Richer wood color
       metalness: 0.1,
-      roughness: 0.8,
+      roughness: 0.7,
+      clearcoat: 0.2,
+      clearcoatRoughness: 0.2
     });
     const desk = new THREE.Mesh(deskGeometry, deskMaterial);
     desk.position.y = -1.2;
     workspaceGroup.add(desk);
+    
+    // Add desk texture/details
+    const deskTopGeometry = new THREE.PlaneGeometry(4.9, 2.4);
+    const deskTopMaterial = new THREE.MeshPhysicalMaterial({
+      color: 0x2a1a0a,
+      metalness: 0.1,
+      roughness: 0.8,
+      clearcoat: 0.3,
+      opacity: 0.3,
+      transparent: true
+    });
+    const deskTop = new THREE.Mesh(deskTopGeometry, deskTopMaterial);
+    deskTop.rotation.x = -Math.PI / 2;
+    deskTop.position.y = -1.09;
+    workspaceGroup.add(deskTop);
     
     // Create desk legs
     const createDeskLeg = (x: number, z: number) => {
@@ -60,15 +81,16 @@ const ThreeScene: React.FC = () => {
     createDeskLeg(2.3, -1.1);
     createDeskLeg(-2.3, -1.1);
     
-    // Chair
+    // Chair with improved materials
     const chairGroup = new THREE.Group();
     
     // Chair seat
     const chairSeatGeometry = new THREE.BoxGeometry(1.2, 0.1, 1.2);
     const chairMaterial = new THREE.MeshPhysicalMaterial({
-      color: 0x333333,
-      metalness: 0.2,
-      roughness: 0.7
+      color: 0x222222,
+      metalness: 0.3,
+      roughness: 0.7,
+      clearcoat: 0.1
     });
     const chairSeat = new THREE.Mesh(chairSeatGeometry, chairMaterial);
     chairSeat.position.y = -1.5;
@@ -82,9 +104,25 @@ const ThreeScene: React.FC = () => {
     chairBack.position.z = 2.6;
     chairGroup.add(chairBack);
     
+    // Chair cushion
+    const chairCushionGeometry = new THREE.BoxGeometry(1.1, 0.05, 1.1);
+    const chairCushionMaterial = new THREE.MeshPhysicalMaterial({
+      color: 0x333333,
+      metalness: 0.1,
+      roughness: 0.9
+    });
+    const chairCushion = new THREE.Mesh(chairCushionGeometry, chairCushionMaterial);
+    chairCushion.position.y = -1.43;
+    chairCushion.position.z = 2;
+    chairGroup.add(chairCushion);
+    
     // Chair legs
     const chairLegGeometry = new THREE.CylinderGeometry(0.05, 0.05, 0.7);
-    const chairLegMaterial = new THREE.MeshStandardMaterial({ color: 0x888888 });
+    const chairLegMaterial = new THREE.MeshStandardMaterial({ 
+      color: 0x888888,
+      metalness: 0.8,
+      roughness: 0.2
+    });
     
     const positions = [
       [0.5, 0.5], [0.5, -0.5], [-0.5, 0.5], [-0.5, -0.5]
@@ -111,6 +149,7 @@ const ThreeScene: React.FC = () => {
       clearcoatRoughness: 0.1
     });
     const screen = new THREE.Mesh(screenGeometry, screenMaterial);
+    screen.userData = { isScreen: true }; // For raycaster identification
     monitorGroup.add(screen);
     
     // Screen bezels
@@ -138,13 +177,10 @@ const ThreeScene: React.FC = () => {
     base.position.y = -1.8;
     monitorGroup.add(base);
     
-    // Screen content (your profile)
-    const loader = new THREE.TextureLoader();
-    
     // Create a canvas for dynamic text rendering
     const canvas = document.createElement('canvas');
-    canvas.width = 512;
-    canvas.height = 512;
+    canvas.width = 1024;
+    canvas.height = 1024;
     const context = canvas.getContext('2d');
     
     if (context) {
@@ -161,25 +197,50 @@ const ThreeScene: React.FC = () => {
       
       // Draw profile info
       context.fillStyle = 'white';
-      context.font = 'bold 36px Arial';
+      context.font = 'bold 48px Arial';
       context.textAlign = 'center';
-      context.fillText('Muhammed Anas KP', canvas.width / 2, 120);
+      context.fillText('Muhammed Anas KP', canvas.width / 2, 150);
+      
+      context.font = '32px Arial';
+      context.fillText('Blockchain Developer', canvas.width / 2, 210);
       
       context.font = '24px Arial';
-      context.fillText('Blockchain Developer', canvas.width / 2, 170);
+      context.fillText('Ethereum | Solana | Wormhole', canvas.width / 2, 280);
       
-      context.font = '18px Arial';
-      context.fillText('Ethereum | Solana | Wormhole', canvas.width / 2, 220);
+      // Add email
+      context.font = '20px Arial';
+      context.fillText('anaskoyakkara@gmail.com', canvas.width / 2, 340);
+      
+      // Add GitHub
+      context.fillText('github.com/anskp', canvas.width / 2, 380);
       
       // Add a stylized avatar placeholder
       context.fillStyle = 'white';
       context.beginPath();
-      context.arc(canvas.width / 2, 320, 80, 0, Math.PI * 2);
+      context.arc(canvas.width / 2, 550, 100, 0, Math.PI * 2);
       context.fill();
       
       context.fillStyle = '#9b87f5';
-      context.font = 'bold 70px Arial';
-      context.fillText('MA', canvas.width / 2, 345);
+      context.font = 'bold 100px Arial';
+      context.fillText('MA', canvas.width / 2, 580);
+      
+      // Skills section
+      context.fillStyle = 'white';
+      context.font = 'bold 28px Arial';
+      context.fillText('Skills & Technologies', canvas.width / 2, 720);
+      
+      const skills = [
+        'Smart Contract Development',
+        'Cross-Chain Solutions (Wormhole)',
+        'Solidity & Rust',
+        'Web3 Integration',
+        'DeFi Protocols'
+      ];
+      
+      context.font = '20px Arial';
+      skills.forEach((skill, index) => {
+        context.fillText(skill, canvas.width / 2, 760 + index * 40);
+      });
     }
     
     // Create texture from canvas
@@ -194,6 +255,7 @@ const ThreeScene: React.FC = () => {
     });
     const screenContent = new THREE.Mesh(screenContentGeometry, screenContentMaterial);
     screenContent.position.z = 0.06;
+    screenContent.userData = { isScreen: true }; // For raycaster identification
     monitorGroup.add(screenContent);
     
     // Keyboard
@@ -207,11 +269,124 @@ const ThreeScene: React.FC = () => {
     keyboard.position.set(0, -1.1, 0.5);
     workspaceGroup.add(keyboard);
     
+    // Add keyboard details
+    const keysGeometry = new THREE.PlaneGeometry(1.9, 0.7);
+    const keysTexture = new THREE.CanvasTexture(createKeyboardTexture());
+    const keysMaterial = new THREE.MeshBasicMaterial({
+      map: keysTexture,
+      transparent: true
+    });
+    const keys = new THREE.Mesh(keysGeometry, keysMaterial);
+    keys.rotation.x = -Math.PI / 2;
+    keys.position.set(0, -1.04, 0.5);
+    workspaceGroup.add(keys);
+    
+    function createKeyboardTexture() {
+      const keyCanvas = document.createElement('canvas');
+      keyCanvas.width = 512;
+      keyCanvas.height = 256;
+      const keyCtx = keyCanvas.getContext('2d');
+      
+      if (keyCtx) {
+        keyCtx.fillStyle = 'rgba(0, 0, 0, 0)';
+        keyCtx.fillRect(0, 0, keyCanvas.width, keyCanvas.height);
+        
+        const rows = 4;
+        const keysPerRow = 12;
+        const keyWidth = keyCanvas.width / keysPerRow;
+        const keyHeight = keyCanvas.height / rows;
+        const padding = 2;
+        
+        keyCtx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+        for (let row = 0; row < rows; row++) {
+          for (let col = 0; col < keysPerRow; col++) {
+            keyCtx.fillRect(
+              col * keyWidth + padding,
+              row * keyHeight + padding,
+              keyWidth - padding * 2,
+              keyHeight - padding * 2
+            );
+          }
+        }
+      }
+      
+      return keyCanvas;
+    }
+    
     // Mouse
     const mouseGeometry = new THREE.BoxGeometry(0.3, 0.1, 0.5);
     const mouse = new THREE.Mesh(mouseGeometry, keyboardMaterial);
     mouse.position.set(1.5, -1.1, 0.5);
     workspaceGroup.add(mouse);
+    
+    // Add mouse details
+    const mouseDetailsGeometry = new THREE.PlaneGeometry(0.28, 0.48);
+    const mouseDetailsMaterial = new THREE.MeshBasicMaterial({
+      color: 0x444444,
+      transparent: true,
+      opacity: 0.5
+    });
+    const mouseDetails = new THREE.Mesh(mouseDetailsGeometry, mouseDetailsMaterial);
+    mouseDetails.rotation.x = -Math.PI / 2;
+    mouseDetails.position.set(1.5, -1.04, 0.5);
+    workspaceGroup.add(mouseDetails);
+    
+    // Coffee mug
+    const mugGroup = new THREE.Group();
+    
+    const mugGeometry = new THREE.CylinderGeometry(0.2, 0.15, 0.35, 32);
+    const mugMaterial = new THREE.MeshPhysicalMaterial({
+      color: 0xffffff,
+      metalness: 0.1,
+      roughness: 0.5
+    });
+    const mug = new THREE.Mesh(mugGeometry, mugMaterial);
+    
+    const handleGeometry = new THREE.TorusGeometry(0.1, 0.03, 16, 32, Math.PI);
+    const handle = new THREE.Mesh(handleGeometry, mugMaterial);
+    handle.rotation.y = Math.PI / 2;
+    handle.position.x = 0.2;
+    
+    const coffeeGeometry = new THREE.CylinderGeometry(0.18, 0.18, 0.05, 32);
+    const coffeeMaterial = new THREE.MeshPhysicalMaterial({
+      color: 0x3a1a00,
+      metalness: 0.1,
+      roughness: 0.5
+    });
+    const coffee = new THREE.Mesh(coffeeGeometry, coffeeMaterial);
+    coffee.position.y = 0.16;
+    
+    mugGroup.add(mug);
+    mugGroup.add(handle);
+    mugGroup.add(coffee);
+    mugGroup.position.set(-1.7, -1.02, 0.5);
+    
+    workspaceGroup.add(mugGroup);
+    
+    // Notepad
+    const notepadGeometry = new THREE.BoxGeometry(0.8, 0.05, 1);
+    const notepadMaterial = new THREE.MeshPhysicalMaterial({
+      color: 0xffffff,
+      metalness: 0.1,
+      roughness: 0.9
+    });
+    const notepad = new THREE.Mesh(notepadGeometry, notepadMaterial);
+    notepad.position.set(-1.3, -1.15, -0.5);
+    notepad.rotation.z = 0.1;
+    workspaceGroup.add(notepad);
+    
+    // Pen
+    const penGeometry = new THREE.CylinderGeometry(0.02, 0.02, 0.7, 32);
+    const penMaterial = new THREE.MeshPhysicalMaterial({
+      color: 0x222222,
+      metalness: 0.9,
+      roughness: 0.1
+    });
+    const pen = new THREE.Mesh(penGeometry, penMaterial);
+    pen.position.set(-1.1, -1.1, -0.5);
+    pen.rotation.z = 0.5;
+    pen.rotation.x = 0.3;
+    workspaceGroup.add(pen);
     
     // Position the monitor on the desk
     monitorGroup.position.y = 0.3;
@@ -240,17 +415,28 @@ const ThreeScene: React.FC = () => {
     // Add workspace to scene
     scene.add(workspaceGroup);
     
-    // Animation
+    // Camera position for normal and zoomed views
+    const normalCameraPosition = new THREE.Vector3(0, 1, 5);
+    const zoomedCameraPosition = new THREE.Vector3(0, 0, 2);
+    
+    // Handle mouse interaction
     let mouseX = 0;
     let mouseY = 0;
     let isInteracting = false;
+    let targetCameraPosition = normalCameraPosition.clone();
+    let isZoomed = false;
     
+    // Mouse event handling
     const handleMouseMove = (event: MouseEvent) => {
       // Calculate normalized mouse coordinates
       const rect = mountRef.current?.getBoundingClientRect();
       if (rect) {
         mouseX = ((event.clientX - rect.left) / rect.width) * 2 - 1;
         mouseY = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+        
+        // Update raycaster
+        mouse.x = mouseX;
+        mouse.y = mouseY;
       }
     };
     
@@ -258,8 +444,33 @@ const ThreeScene: React.FC = () => {
       isInteracting = true;
     };
     
-    const handleMouseUp = () => {
+    const handleMouseUp = (event: MouseEvent) => {
       isInteracting = false;
+      
+      // Check for screen click
+      const rect = mountRef.current?.getBoundingClientRect();
+      if (rect) {
+        mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+        
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects(monitorGroup.children);
+        
+        // If clicked on screen
+        if (intersects.length > 0 && intersects.some(i => i.object.userData?.isScreen)) {
+          // Toggle between normal and zoomed view
+          isZoomed = !isZoomed;
+          
+          // Update camera target position
+          if (isZoomed) {
+            targetCameraPosition = zoomedCameraPosition.clone();
+            setScreenActive(true);
+          } else {
+            targetCameraPosition = normalCameraPosition.clone();
+            setScreenActive(false);
+          }
+        }
+      }
     };
     
     mountRef.current.addEventListener('mousemove', handleMouseMove);
@@ -282,18 +493,27 @@ const ThreeScene: React.FC = () => {
     const animate = () => {
       requestAnimationFrame(animate);
       
-      // Enhanced interaction: Rotate the entire workspace
-      if (isInteracting) {
-        // More pronounced rotation for interactive mode
-        workspaceGroup.rotation.y = mouseX * 0.5;
-        workspaceGroup.rotation.x = mouseY * 0.3;
+      // Smooth camera movement between normal and zoomed views
+      camera.position.lerp(targetCameraPosition, 0.05);
+      
+      // Only rotate when not zoomed
+      if (!isZoomed) {
+        if (isInteracting) {
+          // More pronounced rotation for interactive mode
+          workspaceGroup.rotation.y = mouseX * 0.5;
+          workspaceGroup.rotation.x = mouseY * 0.3;
+        } else {
+          // Keep still when not interacting (no automatic rotation)
+          workspaceGroup.rotation.y = THREE.MathUtils.lerp(workspaceGroup.rotation.y, 0, 0.02);
+          workspaceGroup.rotation.x = THREE.MathUtils.lerp(workspaceGroup.rotation.x, 0, 0.02);
+        }
       } else {
-        // Gentle animation when not interacting
-        workspaceGroup.rotation.y += 0.001;
-        workspaceGroup.rotation.x = Math.sin(Date.now() * 0.001) * 0.1;
+        // When zoomed in, reset rotation to face the screen directly
+        workspaceGroup.rotation.y = THREE.MathUtils.lerp(workspaceGroup.rotation.y, 0, 0.05);
+        workspaceGroup.rotation.x = THREE.MathUtils.lerp(workspaceGroup.rotation.x, 0, 0.05);
       }
       
-      // Animate particles
+      // Update particles
       particlesMesh.rotation.y += 0.0005;
       
       renderer.render(scene, camera);
@@ -334,11 +554,56 @@ const ThreeScene: React.FC = () => {
   }, []);
   
   return (
-    <div 
-      ref={mountRef} 
-      className="w-full h-full"
-      style={{ cursor: 'grab' }}
-    />
+    <div>
+      <div 
+        ref={mountRef} 
+        className="w-full h-full"
+        style={{ cursor: screenActive ? 'default' : 'grab' }}
+      />
+      {screenActive && (
+        <div className="absolute inset-0 bg-lavender text-white p-8 flex flex-col items-center justify-center bg-opacity-90 z-10 overflow-auto">
+          <div className="max-w-3xl w-full space-y-8 text-center">
+            <h1 className="text-4xl md:text-5xl font-display font-bold">
+              Muhammed Anas KP
+            </h1>
+            <p className="text-xl">Blockchain Developer</p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left mt-8">
+              <div className="bg-white/10 p-6 rounded-xl">
+                <h2 className="text-2xl font-semibold mb-4">Skills</h2>
+                <ul className="space-y-2">
+                  <li>• Smart Contract Development</li>
+                  <li>• Cross-Chain Solutions (Wormhole)</li>
+                  <li>• Solidity & Rust Programming</li>
+                  <li>• Web3 Integration</li>
+                  <li>• DeFi Protocols</li>
+                </ul>
+              </div>
+              
+              <div className="bg-white/10 p-6 rounded-xl">
+                <h2 className="text-2xl font-semibold mb-4">Contact</h2>
+                <p className="mb-2">
+                  <strong>Email:</strong> anaskoyakkara@gmail.com
+                </p>
+                <p className="mb-2">
+                  <strong>GitHub:</strong> github.com/anskp
+                </p>
+                <p>
+                  <strong>Education:</strong> Computer Science Engineering
+                </p>
+              </div>
+            </div>
+            
+            <button 
+              onClick={() => setScreenActive(false)}
+              className="mt-8 bg-white text-lavender font-medium px-6 py-3 rounded-lg hover:bg-opacity-90 transition-colors"
+            >
+              Return to 3D View
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 
